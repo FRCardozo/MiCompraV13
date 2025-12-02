@@ -1,6 +1,6 @@
 // src/pages/Login.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   ShoppingBag,
@@ -10,7 +10,9 @@ import {
   AlertCircle,
   UserPlus2,
   Store,
-  Bike
+  Bike,
+  CheckCircle2,
+  X,
 } from 'lucide-react';
 
 export default function Login() {
@@ -18,8 +20,28 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [globalMessage, setGlobalMessage] = useState(null);
+
   const { signIn, user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Mensaje global que viene desde los registros (cliente, tienda, repartidor)
+  useEffect(() => {
+    if (location.state?.authMessage) {
+      setGlobalMessage(location.state.authMessage);
+
+      // Limpiar el state para que no se repita al navegar hacia atrás
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
+
+  // Ocultar mensaje global después de 10 segundos
+  useEffect(() => {
+    if (!globalMessage) return;
+    const timer = setTimeout(() => setGlobalMessage(null), 10000);
+    return () => clearTimeout(timer);
+  }, [globalMessage]);
 
   // Redirigir automáticamente si ya hay sesión activa
   useEffect(() => {
@@ -62,7 +84,6 @@ export default function Login() {
         setIsSubmitting(false);
         return;
       }
-
       // El AuthContext redirige cuando cargue el perfil
     } catch (err) {
       console.error('Error en login:', err);
@@ -86,13 +107,14 @@ export default function Login() {
               </span>
             </div>
             <h1 className="text-4xl font-extrabold text-slate-900 leading-tight mb-4">
-              Todo lo que necesitas,<br />
+              Todo lo que necesitas,
+              <br />
               en un solo lugar.
             </h1>
             <p className="text-slate-600 text-sm leading-relaxed max-w-md">
-              MiCompra funciona como las grandes apps de delivery:
-              crea tu cuenta, elige tus tiendas favoritas y recibe tus pedidos
-              en pocos minutos, sin complicaciones.
+              MiCompra funciona como las grandes apps de delivery: crea tu
+              cuenta, elige tus tiendas favoritas y recibe tus pedidos en pocos
+              minutos, sin complicaciones.
             </p>
           </div>
 
@@ -103,15 +125,11 @@ export default function Login() {
             <div className="grid grid-cols-3 gap-3 text-xs text-slate-700">
               <div className="bg-white/80 rounded-2xl p-3 shadow-sm">
                 <p className="font-semibold mb-1">Rápido</p>
-                <p className="text-[11px]">
-                  Pedidos entregados en minutos
-                </p>
+                <p className="text-[11px]">Pedidos entregados en minutos</p>
               </div>
               <div className="bg-white/80 rounded-2xl p-3 shadow-sm">
                 <p className="font-semibold mb-1">Seguro</p>
-                <p className="text-[11px]">
-                  Pagos y datos protegidos
-                </p>
+                <p className="text-[11px]">Pagos y datos protegidos</p>
               </div>
               <div className="bg-white/80 rounded-2xl p-3 shadow-sm">
                 <p className="font-semibold mb-1">Cercano</p>
@@ -126,7 +144,7 @@ export default function Login() {
         {/* Panel derecho: formulario */}
         <div className="bg-white rounded-3xl shadow-2xl shadow-blue-100/60 p-6 sm:p-8 relative overflow-hidden">
           {/* Badge superior */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md">
                 <ShoppingBag className="w-6 h-6 text-white" />
@@ -143,8 +161,43 @@ export default function Login() {
             </span>
           </div>
 
+          {/* Mensaje global (exitoso de registro) */}
+          {globalMessage && (
+            <div
+              className={`mb-4 p-3.5 rounded-2xl text-xs flex items-start gap-2 border ${
+                globalMessage.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-amber-50 border-amber-200 text-amber-800'
+              }`}
+            >
+              {globalMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 mt-[2px]" />
+              ) : (
+                <AlertCircle className="w-4 h-4 mt-[2px]" />
+              )}
+              <div className="flex-1">
+                <p className="font-semibold text-[11px] uppercase tracking-wide mb-0.5">
+                  {globalMessage.type === 'success'
+                    ? 'Registro exitoso'
+                    : 'Aviso'}
+                </p>
+                <p className="text-[12px] leading-snug">
+                  {globalMessage.text}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGlobalMessage(null)}
+                className="ml-2 inline-flex items-center justify-center rounded-full hover:bg-black/5 transition-colors p-1"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Error de login */}
           {error && (
-            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2">
+            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-600" />
               <p className="text-xs text-red-700">{error}</p>
             </div>

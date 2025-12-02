@@ -1,3 +1,4 @@
+// src/pages/RegistroRepartidor.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -8,6 +9,7 @@ export default function RegistroRepartidor() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [municipios, setMunicipios] = useState([]);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -16,7 +18,7 @@ export default function RegistroRepartidor() {
     telefono: '',
     municipio_id: '',
     tipo_vehiculo: 'moto',
-    numero_documento: ''
+    numero_documento: '',
   });
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function RegistroRepartidor() {
         .from('municipios')
         .select('*')
         .order('nombre');
-      
+
       if (error) throw error;
       setMunicipios(data || []);
     } catch (err) {
@@ -40,7 +42,7 @@ export default function RegistroRepartidor() {
   function handleChange(e) {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   }
 
@@ -66,57 +68,61 @@ export default function RegistroRepartidor() {
         options: {
           data: {
             tipo_usuario: 'repartidor',
-            nombre: formData.nombre
-          }
-        }
+            nombre: formData.nombre,
+          },
+        },
       });
 
       if (authError) throw authError;
-
       if (!authData.user) {
         throw new Error('No se pudo crear el usuario');
       }
 
-      // Crear usuario en tabla usuarios
-      const { error: usuarioError } = await supabase
-        .from('usuarios')
-        .insert([{
-          id: authData.user.id,
+      const userId = authData.user.id;
+
+      // Crear registro en tabla usuarios
+      const { error: usuarioError } = await supabase.from('usuarios').insert([
+        {
+          id: userId,
           email: formData.email,
           nombre: formData.nombre,
           telefono: formData.telefono,
           tipo_usuario: 'repartidor',
-          municipio_id: formData.municipio_id
-        }]);
+          municipio_id: formData.municipio_id,
+        },
+      ]);
 
       if (usuarioError) throw usuarioError;
 
-      // Crear perfil de repartidor (solo campos específicos de repartidor)
+      // Crear perfil específico de repartidor
       const { error: repartidorError } = await supabase
         .from('repartidores')
-        .insert([{
-          usuario_id: authData.user.id,
-          medio_transporte: formData.tipo_vehiculo,
-          placa: formData.numero_documento,
-          disponible: true
-        }]);
+        .insert([
+          {
+            usuario_id: userId,
+            medio_transporte: formData.tipo_vehiculo,
+            placa: formData.numero_documento,
+            disponible: true,
+          },
+        ]);
 
       if (repartidorError) throw repartidorError;
 
-      // Crear wallet para el repartidor
-      const { error: walletError } = await supabase
-        .from('wallets')
-        .insert([{
-          repartidor_id: authData.user.id,
-          saldo_disponible: 0,
-          saldo_pendiente: 0
-        }]);
+      // Si la wallet la manejas con trigger en BD, no es necesario insertar aquí.
+      // Si más adelante quieres hacerlo desde código, asegúrate de usar las columnas correctas.
 
-      if (walletError) console.error('Error creando wallet:', walletError);
-
-      alert('¡Registro exitoso! Por favor revisa tu correo para confirmar tu cuenta.');
-      navigate('/login');
-
+      // Redirigir al login con mensaje global
+      navigate('/login', {
+        replace: true,
+        state: {
+          authMessage: {
+            type: 'success',
+            text:
+              '¡Registro exitoso! Te enviamos un correo para confirmar tu cuenta. ' +
+              'Después de confirmarla, inicia sesión para comenzar a recibir pedidos.',
+          },
+        },
+      });
     } catch (err) {
       console.error('Error en registro:', err);
       setError(err.message || 'Error al registrar el repartidor');
@@ -132,8 +138,12 @@ export default function RegistroRepartidor() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
             <Bike className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Registrar Repartidor</h1>
-          <p className="text-gray-600">Únete a MiCompra y empieza a ganar</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Registrar Repartidor
+          </h1>
+          <p className="text-gray-600">
+            Únete a MiCompra y empieza a ganar entregando pedidos.
+          </p>
         </div>
 
         {error && (
@@ -312,7 +322,10 @@ export default function RegistroRepartidor() {
         <div className="mt-6 text-center">
           <p className="text-gray-600">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-green-600 hover:text-green-700 font-semibold">
+            <Link
+              to="/login"
+              className="text-green-600 hover:text-green-700 font-semibold"
+            >
               Inicia sesión
             </Link>
           </p>

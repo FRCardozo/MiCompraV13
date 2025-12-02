@@ -1,8 +1,18 @@
+// src/pages/Registro.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ShoppingBag, Mail, Lock, User, Phone, MapPin, Loader, AlertCircle } from 'lucide-react';
+import {
+  ShoppingBag,
+  Mail,
+  Lock,
+  User,
+  Phone,
+  MapPin,
+  Loader,
+  AlertCircle,
+} from 'lucide-react';
 
 export default function Registro() {
   const [formData, setFormData] = useState({
@@ -18,6 +28,7 @@ export default function Registro() {
   const [errorMunicipios, setErrorMunicipios] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -29,15 +40,15 @@ export default function Registro() {
     try {
       setLoadingMunicipios(true);
       setErrorMunicipios('');
-      
+
       const { data, error } = await supabase
         .from('municipios')
         .select('*')
         .eq('activo', true)
         .order('nombre');
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         setMunicipios(data);
       } else {
@@ -45,7 +56,9 @@ export default function Registro() {
       }
     } catch (error) {
       console.error('Error cargando municipios:', error);
-      setErrorMunicipios('Error al cargar los municipios. Por favor, recarga la página.');
+      setErrorMunicipios(
+        'Error al cargar los municipios. Por favor, recarga la página.'
+      );
     } finally {
       setLoadingMunicipios(false);
     }
@@ -74,20 +87,36 @@ export default function Registro() {
 
     setLoading(true);
 
-    const { data, error } = await signUp(formData.email, formData.password, {
-      nombre: formData.nombre,
-      telefono: formData.telefono,
-      tipo_usuario: 'cliente',
-      municipio_id: formData.municipio_id,
-    });
+    try {
+      const { data, error } = await signUp(formData.email, formData.password, {
+        nombre: formData.nombre,
+        telefono: formData.telefono,
+        tipo_usuario: 'cliente',
+        municipio_id: formData.municipio_id,
+      });
 
-    if (error) {
-      setError(error.message || 'Error al crear la cuenta');
+      if (error) {
+        setError(error.message || 'Error al crear la cuenta');
+        return;
+      }
+
+      // Redirigimos al login con mensaje global
+      navigate('/login', {
+        replace: true,
+        state: {
+          authMessage: {
+            type: 'success',
+            text:
+              '¡Tu cuenta de cliente se creó correctamente! Si tu correo lo requiere, confírmalo y luego inicia sesión para hacer tu primer pedido en MiCompra.',
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Error en registro de cliente:', err);
+      setError(err.message || 'Error al crear la cuenta');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    navigate('/cliente/home');
   };
 
   return (
@@ -99,7 +128,7 @@ export default function Registro() {
               <ShoppingBag className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">MiCompra</h1>
-            <p className="text-gray-600 mt-2">Crea tu cuenta</p>
+            <p className="text-gray-600 mt-2">Crea tu cuenta de cliente</p>
           </div>
 
           {error && (
@@ -174,7 +203,7 @@ export default function Registro() {
                   name="municipio_id"
                   value={formData.municipio_id}
                   onChange={handleChange}
-                  disabled={loadingMunicipios || errorMunicipios}
+                  disabled={loadingMunicipios || !!errorMunicipios}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                   required
                 >
@@ -185,11 +214,13 @@ export default function Registro() {
                       ? 'Error al cargar'
                       : 'Selecciona tu municipio'}
                   </option>
-                  {!loadingMunicipios && !errorMunicipios && municipios.map((municipio) => (
-                    <option key={municipio.id} value={municipio.id}>
-                      {municipio.nombre}
-                    </option>
-                  ))}
+                  {!loadingMunicipios &&
+                    !errorMunicipios &&
+                    municipios.map((municipio) => (
+                      <option key={municipio.id} value={municipio.id}>
+                        {municipio.nombre}
+                      </option>
+                    ))}
                 </select>
                 {loadingMunicipios && (
                   <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 animate-spin text-blue-600" />
@@ -265,7 +296,10 @@ export default function Registro() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               ¿Ya tienes cuenta?{' '}
-              <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+              <Link
+                to="/login"
+                className="text-blue-600 font-semibold hover:underline"
+              >
                 Inicia sesión
               </Link>
             </p>
