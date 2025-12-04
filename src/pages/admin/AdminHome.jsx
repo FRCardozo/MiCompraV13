@@ -1,3 +1,4 @@
+// src/pages/admin/AdminHome.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';

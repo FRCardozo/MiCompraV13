@@ -1,3 +1,4 @@
+// src/pages/tienda/TiendaHome.jsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';

@@ -107,14 +107,12 @@ export const AuthProvider = ({ children }) => {
 
       if (!data) {
         console.warn('Perfil no encontrado para usuario:', userId);
-        setAuthError(
-          'Tu perfil está incompleto. Por favor, completa tu registro.'
-        );
+        setAuthError('Tu perfil está incompleto. Por favor, completa tu registro.');
         setProfile(null);
-        // si decides forzar logout cuando no hay perfil
-        await signOut();
+        // ❌ Ya NO hacemos signOut automático.
         return;
       }
+
 
       setProfile(data);
       setAuthError(null);
